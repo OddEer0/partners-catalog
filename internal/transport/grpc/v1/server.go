@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/OddEer0/partners-catalog/internal/domain"
 	"github.com/OddEer0/partners-catalog/internal/domain/model"
 	"github.com/OddEer0/partners-catalog/internal/domain/repository"
@@ -127,7 +128,12 @@ func (p *PartnersCatalogServer) GetPartnersCatalog(ctx context.Context, _ *empty
 }
 
 func (p *PartnersCatalogServer) SetPartnersCatalog(ctx context.Context, catalog *v1.PartnersCatalog) (*empty.Empty, error) {
-	err := p.repo.SetPartnersCatalog(ctx, convertTransportPartnersCatalogToDomain(catalog))
+	err := catalog.ValidateAll()
+	if err != nil {
+		fmt.Println(err)
+		return nil, status.Error(codes.InvalidArgument, "Bad Request")
+	}
+	err = p.repo.SetPartnersCatalog(ctx, convertTransportPartnersCatalogToDomain(catalog))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
