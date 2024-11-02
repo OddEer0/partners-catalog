@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package v1.partners_catalog;
+
+option go_package = "github.com/OddEer0/partners-catalog/protogen/v1;v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+message CatalogEntity {
+  string id = 1;
+  string name = 2;
+}
+
+message Manufacturer {
+  string id = 1;
+  string name = 2;
+  string brand_name = 3;
+}
+
+message CatalogDevice {
+  string manufacturer = 1;
+  string model = 2;
+  string name = 3;
+  repeated string categories = 4;
+  repeated string protocols = 5;
+  string image = 6;
+  string link = 7;
+  repeated string direct = 8;
+  repeated string cloud = 9;
+}
+
+message PartnersCatalogFilter {
+  repeated CatalogEntity categories = 1;
+  repeated CatalogEntity manufacturers = 2;
+  repeated CatalogEntity protocols = 3;
+}
+
+message PartnersCatalog {
+  repeated CatalogEntity categories = 1;
+  repeated Manufacturer manufacturers = 2;
+  repeated CatalogEntity protocols = 3;
+  repeated CatalogEntity direct = 4;
+  repeated CatalogEntity cloud = 5;
+  repeated CatalogDevice devices = 6;
+}
+
+service PartnersCatalogService {
+  rpc GetPartnersCatalog(google.protobuf.Empty) returns (PartnersCatalog) {
+    option (google.api.http) = {
+      get: "/v1/partners-catalog"
+    };
+  }
+
+  rpc SetPartnersCatalog(PartnersCatalog) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/partners-catalog"
+      body: "*"
+    };
+  }
+
+  rpc GetPartnersCatalogFilters(google.protobuf.Empty) returns (PartnersCatalogFilter) {
+    option (google.api.http) = {
+      get: "/v1/partners-filters"
+    };
+  }
+}
