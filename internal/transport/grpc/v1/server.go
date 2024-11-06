@@ -11,11 +11,46 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"log/slog"
 )
 
 type PartnersCatalogServer struct {
 	v1.UnimplementedPartnersCatalogServiceServer
 	repo repository.PartnersCatalog
+}
+
+func (p *PartnersCatalogServer) GetFilteredDevices(ctx context.Context, req *v1.CatalogDevicesReq) (*v1.FilteredDevices, error) {
+	slog.Info("request", slog.Any("req", req))
+	return &v1.FilteredDevices{
+		Result: []*v1.FilteredDevice{
+			{
+				Manufacturer: "kek",
+				Model:        "kekis",
+				Name:         "krutoi",
+				Categories:   []string{"sensor"},
+				Protocols:    []string{"hub"},
+				Image:        "link to image",
+				Link:         "link",
+				SupportsHub:  false,
+				BrandId:      "hehe",
+			},
+			{
+				Manufacturer: "kuzya",
+				Model:        "kuzich",
+				Name:         "meme",
+				Categories:   []string{"sensor_pir"},
+				Protocols:    []string{"hub"},
+				Image:        "link to image",
+				Link:         "link",
+				SupportsHub:  true,
+				BrandId:      "hoho",
+			},
+		},
+	}, nil
+}
+
+func (p *PartnersCatalogServer) GetSearchedPartners(ctx context.Context, req *v1.CatalogPartnersReq) (*v1.Partners, error) {
+	return nil, nil
 }
 
 func convertDomainEntityToTransport(data []*model.CatalogEntity) []*v1.CatalogEntity {

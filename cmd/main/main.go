@@ -7,10 +7,16 @@ import (
 	v1 "github.com/OddEer0/partners-catalog/protogen"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 )
 
 func main() {
+	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	slog.SetDefault(l)
 	ctx := context.Background()
 	db := inmem.NewPartnersCatalog()
 	srv := grpcv1.NewPartnersCatalogServer(db)

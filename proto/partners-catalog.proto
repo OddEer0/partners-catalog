@@ -9,59 +9,57 @@ import "google/protobuf/empty.proto";
 import "validate/validate.proto";
 
 message CatalogEntity {
-  string id = 1 [(validate.rules).string = {
-    min_len: 2
-    max_len: 128
-  }];
-  string name = 2 [(validate.rules).string = {
-    min_len: 2
-    max_len: 512
-  }];
+  string id = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
 }
 
 message Manufacturer {
-  string id = 1 [(validate.rules).string = {
-    min_len: 2
-    max_len: 128
-  }];
-  string name = 2 [(validate.rules).string = {
-    min_len: 2
-    max_len: 512
-  }];
-  string brand_name = 3 [(validate.rules).string = {
-    min_len: 2
-    max_len: 512
-  }];
+  string id = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+  string brand_name = 3 [(validate.rules).string.min_len = 1];
+  repeated string aliases = 4;
+}
+
+message DeviceException {
+  string id = 1;
+  string type = 2;
 }
 
 message CatalogDevice {
-  string manufacturer = 1 [(validate.rules).string = {
-    min_len: 2
-    max_len: 256
-  }];
+  string manufacturer = 1 [(validate.rules).string.min_len = 1];
   string model = 2;
-  string name = 3 [(validate.rules).string = {
-    min_len: 2
-    max_len: 512
-  }];
-  repeated string categories = 4 [(validate.rules).repeated.items.string = {
-    min_len: 2
-    max_len: 512
-  }];
-  repeated string protocols = 5 [(validate.rules).repeated.items.string = {
-    min_len: 2
-    max_len: 512
-  }];
+  string name = 3 [(validate.rules).string.min_len = 1];
+  repeated string categories = 4 [(validate.rules).repeated.min_items = 1];
+  repeated string protocols = 5 [(validate.rules).repeated.min_items = 1];
   string image = 6 [(validate.rules).string.uri = true];
   string link = 7;
-  repeated string direct = 8 [(validate.rules).repeated.items.string = {
-    min_len: 2
-    max_len: 512
-  }];
-  repeated string cloud = 9 [(validate.rules).repeated.items.string = {
-    min_len: 2
-    max_len: 512
-  }];
+  repeated string direct = 8;
+  repeated string cloud = 9;
+  repeated DeviceException exceptions = 10;
+}
+
+message CatalogDevices {
+  repeated CatalogDevice devices = 1;
+}
+
+message CatalogDevicesReq {
+  string search_all = 1;
+  repeated string categories = 2;
+  repeated string protocols = 3;
+  repeated string manufactures = 4;
+  string support_zigbee = 5;
+}
+
+message CatalogPartnersReq {
+  string search_all = 1;
+}
+
+message CatalogPartner {
+  string id = 1;
+}
+
+message CatalogPartners {
+  repeated CatalogPartner partners = 1;
 }
 
 message PartnersCatalogFilter {
@@ -71,31 +69,78 @@ message PartnersCatalogFilter {
 }
 
 message PartnersCatalog {
-  repeated CatalogEntity categories = 1;
-  repeated Manufacturer manufacturers = 2;
-  repeated CatalogEntity protocols = 3;
-  repeated CatalogEntity direct = 4;
-  repeated CatalogEntity cloud = 5;
-  repeated CatalogDevice devices = 6;
+  repeated CatalogEntity categories = 1 [(validate.rules).repeated.min_items = 1];
+  repeated Manufacturer manufacturers = 2 [(validate.rules).repeated.min_items = 1];
+  repeated CatalogEntity protocols = 3 [(validate.rules).repeated.min_items = 1];
+  repeated CatalogEntity direct = 4 [(validate.rules).repeated.min_items = 1];
+  repeated CatalogEntity cloud = 5 [(validate.rules).repeated.min_items = 1];
+  repeated CatalogDevice devices = 6 [(validate.rules).repeated.min_items = 1];
+}
+
+message FilteredDevice {
+    string manufacturer = 1 [(validate.rules).string.min_len = 1];
+    string model = 2;
+    string name = 3 [(validate.rules).string.min_len = 1];
+    repeated string categories = 4 [(validate.rules).repeated.min_items = 1];
+    repeated string protocols = 5 [(validate.rules).repeated.min_items = 1];
+    string image = 6 [(validate.rules).string.uri = true];
+    string link = 7;
+    bool supports_hub = 8;
+    repeated string direct = 9;
+    repeated string cloud = 10;
+    string brand_id = 11;
+}
+
+message FilteredDevices {
+  repeated FilteredDevice result = 1;
+}
+
+message Partner {
+  string id = 1;
+  string name = 2;
+  string icon = 3;
+  bool link_status = 4;
+  string linked_id = 5;
+  string partner_type = 6;
+  bool is_beta = 7;
+  bool token_expired = 8;
+  repeated string categories = 9 [(validate.rules).repeated.min_items = 1];
+  repeated string manufacturer = 10 [(validate.rules).repeated.min_items = 1];
+}
+
+message Partners {
+  repeated Partner result = 1;
 }
 
 service PartnersCatalogService {
   rpc GetPartnersCatalog(google.protobuf.Empty) returns (PartnersCatalog) {
     option (google.api.http) = {
-      get: "/v1/partners-catalog"
+      get: "/api/smarthome/v1/partners-catalog"
     };
   }
 
   rpc SetPartnersCatalog(PartnersCatalog) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/v1/partners-catalog"
+      post: "/api/smarthome/v1/partners-catalog"
       body: "*"
     };
   }
 
   rpc GetPartnersCatalogFilters(google.protobuf.Empty) returns (PartnersCatalogFilter) {
     option (google.api.http) = {
-      get: "/v1/partners-filters"
+      get: "/api/smarthome/v1/partners-filters"
+    };
+  }
+
+  rpc GetFilteredDevices(CatalogDevicesReq) returns (FilteredDevices) {
+    option (google.api.http) = {
+      get: "/api/smarthome/v1/partners-devices"
+    };
+  }
+
+  rpc GetSearchedPartners(CatalogPartnersReq) returns (Partners) {
+    option (google.api.http) = {
+      get: "/api/smarthome/v1/partners"
     };
   }
 }
