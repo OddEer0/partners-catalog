@@ -20,9 +20,8 @@ message Manufacturer {
   repeated string aliases = 4;
 }
 
-message DeviceException {
-  string id = 1;
-  string type = 2;
+message PartnersCatalogUploadRequest {
+  string json = 1 [(validate.rules).string.min_len = 1];
 }
 
 message CatalogDevice {
@@ -35,7 +34,8 @@ message CatalogDevice {
   string link = 7;
   repeated string direct = 8;
   repeated string cloud = 9;
-  repeated DeviceException exceptions = 10;
+  string brand_name = 10;
+  bool is_viewed = 11;
 }
 
 message CatalogDevices {
@@ -119,7 +119,7 @@ service PartnersCatalogService {
     };
   }
 
-  rpc SetPartnersCatalog(PartnersCatalog) returns (google.protobuf.Empty) {
+  rpc SetPartnersCatalog(PartnersCatalogUploadRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/smarthome/v1/partners-catalog"
       body: "*"

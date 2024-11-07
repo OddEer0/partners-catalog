@@ -12,6 +12,9 @@ type (
 		BrandName string
 	}
 
+	CatalogDeviceException struct {
+	}
+
 	CatalogDevice struct {
 		Manufacturer string
 		Model        string
@@ -22,6 +25,8 @@ type (
 		Link         string
 		Direct       []string
 		Cloud        []string
+		BrandName    string
+		IsView       bool
 	}
 
 	PartnersCatalog struct {

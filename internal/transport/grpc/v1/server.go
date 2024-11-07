@@ -2,8 +2,8 @@ package v1
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/OddEer0/partners-catalog/internal/domain"
 	"github.com/OddEer0/partners-catalog/internal/domain/model"
 	"github.com/OddEer0/partners-catalog/internal/domain/repository"
@@ -96,13 +96,15 @@ func convertDomainPartnersCatalogToTransport(data *model.PartnersCatalog) *v1.Pa
 			Cloud:        d.Cloud,
 			Image:        d.Image,
 			Link:         d.Link,
+			IsViewed:     d.IsView,
+			BrandName:    d.BrandName,
 		})
 	}
 
 	return res
 }
 
-func convertTransportEntityToDomain(data []*v1.CatalogEntity) []*model.CatalogEntity {
+func convertTransportEntityToDomain(data []PartnersCatalogEntityDTO) []*model.CatalogEntity {
 	res := make([]*model.CatalogEntity, 0, len(data))
 	for _, d := range data {
 		res = append(res, &model.CatalogEntity{
@@ -113,7 +115,7 @@ func convertTransportEntityToDomain(data []*v1.CatalogEntity) []*model.CatalogEn
 	return res
 }
 
-func convertTransportManufacturerToDomain(data []*v1.Manufacturer) []*model.CatalogManufacturer {
+func convertTransportManufacturerToDomain(data []PartnersCatalogManufacturerDTO) []*model.CatalogManufacturer {
 	res := make([]*model.CatalogManufacturer, 0, len(data))
 	for _, v := range data {
 		res = append(res, &model.CatalogManufacturer{
@@ -125,7 +127,7 @@ func convertTransportManufacturerToDomain(data []*v1.Manufacturer) []*model.Cata
 	return res
 }
 
-func convertTransportPartnersCatalogToDomain(data *v1.PartnersCatalog) *model.PartnersCatalog {
+func convertTransportPartnersCatalogToDomain(data *PartnersCatalogDTO) *model.PartnersCatalog {
 	res := &model.PartnersCatalog{
 		Categories:    convertTransportEntityToDomain(data.Categories),
 		Protocols:     convertTransportEntityToDomain(data.Protocols),
@@ -135,6 +137,26 @@ func convertTransportPartnersCatalogToDomain(data *v1.PartnersCatalog) *model.Pa
 	}
 
 	for _, d := range data.Devices {
+		var (
+			isViewed bool
+			brand    string
+		)
+
+		for _, ex := range d.Exceptions {
+			switch ex.Id {
+			case "brand_name":
+				stringVal, ok := ex.Value.(string)
+				if ok {
+					brand = stringVal
+				}
+			case "is_visible_app":
+				boolVal, ok := ex.Value.(bool)
+				if ok {
+					isViewed = boolVal
+				}
+			}
+		}
+
 		res.Devices = append(res.Devices, &model.CatalogDevice{
 			Manufacturer: d.Manufacturer,
 			Model:        d.Model,
@@ -145,6 +167,8 @@ func convertTransportPartnersCatalogToDomain(data *v1.PartnersCatalog) *model.Pa
 			Cloud:        d.Cloud,
 			Image:        d.Image,
 			Link:         d.Link,
+			IsView:       isViewed,
+			BrandName:    brand,
 		})
 	}
 
@@ -162,13 +186,21 @@ func (p *PartnersCatalogServer) GetPartnersCatalog(ctx context.Context, _ *empty
 	return convertDomainPartnersCatalogToTransport(res), nil
 }
 
-func (p *PartnersCatalogServer) SetPartnersCatalog(ctx context.Context, catalog *v1.PartnersCatalog) (*empty.Empty, error) {
-	err := catalog.ValidateAll()
+func (p *PartnersCatalogServer) SetPartnersCatalog(ctx context.Context, catalog *v1.PartnersCatalogUploadRequest) (*empty.Empty, error) {
+	var dto *PartnersCatalogDTO
+	err := json.Unmarshal([]byte(catalog.Json), &dto)
 	if err != nil {
-		fmt.Println(err)
-		return nil, status.Error(codes.InvalidArgument, "Bad Request")
+		slog.Error("unmarshal json error", slog.Any("error", err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	err = p.repo.SetPartnersCatalog(ctx, convertTransportPartnersCatalogToDomain(catalog))
+
+	err = dto.Validate()
+	if err != nil {
+		slog.Warn("bad request", slog.Any("error", err))
+		return nil, status.Error(codes.InvalidArgument, "bad request")
+	}
+
+	err = p.repo.SetPartnersCatalog(ctx, convertTransportPartnersCatalogToDomain(dto))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

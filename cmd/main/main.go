@@ -12,6 +12,16 @@ import (
 	"os"
 )
 
+type CustomMarshaller struct {
+	*runtime.JSONPb
+}
+
+func (c *CustomMarshaller) Unmarshal(data []byte, v interface{}) error {
+	slog.Debug("Unmarshal", slog.Any("data", v))
+
+	return c.JSONPb.Unmarshal(data, v)
+}
+
 func main() {
 	l := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -20,13 +30,19 @@ func main() {
 	ctx := context.Background()
 	db := inmem.NewPartnersCatalog()
 	srv := grpcv1.NewPartnersCatalogServer(db)
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &CustomMarshaller{
+			JSONPb: &runtime.JSONPb{},
+		}),
+	)
+
 	err := v1.RegisterPartnersCatalogServiceHandlerServer(ctx, mux, srv)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Println("starting server")
 	err = http.ListenAndServe(":10100", mux)
+
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -12,6 +12,13 @@ type PartnersCatalog struct {
 	mu      sync.Mutex
 }
 
+func (p *PartnersCatalog) RemovePartnersCatalog(ctx context.Context) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.catalog = nil
+	return nil
+}
+
 func (p *PartnersCatalog) GetPartnersCatalog(ctx context.Context) (*model.PartnersCatalog, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
